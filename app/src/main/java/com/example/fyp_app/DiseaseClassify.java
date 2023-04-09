@@ -33,6 +33,7 @@ import android.graphics.Color;
 import android.os.Bundle;
 
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.room.Room;
 
 import java.util.Arrays;
 import java.util.Collections;
@@ -73,6 +74,7 @@ public class DiseaseClassify extends AppCompatActivity {
 
 
 
+
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -81,6 +83,8 @@ public class DiseaseClassify extends AppCompatActivity {
         Button uploadimg = (Button) findViewById(R.id.upload_image_button_classify_disease);
         Button diseaseClassify = findViewById(R.id.classify_disease_button);
         Button capture = findViewById(R.id.capture_button_disease_classify);
+        Button showRemedy = findViewById(R.id.showRemedy_btn);
+
         imageView = findViewById(R.id.imageView3);
         TextView result1  = findViewById(R.id.classify_disease_textView);
 
@@ -130,11 +134,11 @@ public class DiseaseClassify extends AppCompatActivity {
                         pixelBuffer[i * 3 + 2] = (val & 0xFF) / 255.0f;
                     }
 
-// Create TensorBuffer from normalized pixel buffer
+                    // Create TensorBuffer from normalized pixel buffer
                     TensorBuffer inputFeature0 = TensorBuffer.createFixedSize(new int[]{1, 224, 224, 3}, DataType.FLOAT32);
                     inputFeature0.loadArray(pixelBuffer, new int[]{1, 224, 224, 3});
 
-// Run model inference and get result
+                    // Run model inference and get result
                     ShortenedModel.Outputs outputs = model.process(inputFeature0);
                     TensorBuffer outputFeature0 = outputs.getOutputFeature0AsTensorBuffer();
 
@@ -157,6 +161,31 @@ public class DiseaseClassify extends AppCompatActivity {
             public void onClick(View view) {
                 Intent intent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
                 startActivityForResult(intent,12);
+            }
+        });
+
+
+        //to go thru db
+        showRemedy.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+
+                AppDatabase db  = Room.databaseBuilder(getApplicationContext(),
+                        AppDatabase.class, "roomdbnew").allowMainThreadQueries().build();
+                RemedyDAO remedyDao = db.remedyDao();
+
+
+
+                List<Remedy> remedys = remedyDao.getAll();
+                String str = "";
+
+                    for(Remedy remedy: remedys)
+                        str = str+"\t "+remedy.getCropName()+" "+remedy.getRemedy_name()+"\n \n";
+
+                System.out.println("THE DB HAS"+str);
+
+
+                System.out.println(Remedy.getRemedyById(8));
             }
         });
 
