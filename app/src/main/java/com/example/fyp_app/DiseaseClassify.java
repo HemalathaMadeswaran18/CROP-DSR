@@ -7,18 +7,32 @@ import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.provider.MediaStore;
+import android.util.Base64;
+import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.TextView;
+
+
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 
+import com.android.volley.AuthFailureError;
+import com.android.volley.NetworkResponse;
+import com.android.volley.Request;
+import com.android.volley.RequestQueue;
+import com.android.volley.Response;
+import com.android.volley.VolleyError;
+import com.android.volley.toolbox.StringRequest;
+import com.android.volley.toolbox.Volley;
 import com.example.fyp_app.ml.ShortenedModel;
 
+import org.json.JSONException;
+import org.json.JSONObject;
 import org.opencv.android.Utils;
 import org.opencv.core.CvType;
 import org.opencv.core.MatOfDouble;
@@ -26,6 +40,10 @@ import org.tensorflow.lite.DataType;
 import org.tensorflow.lite.support.image.TensorImage;
 import org.tensorflow.lite.support.tensorbuffer.TensorBuffer;
 
+import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
@@ -35,9 +53,12 @@ import android.os.Bundle;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.room.Room;
 
+import java.io.InputStream;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import static java.lang.Math.floor;
 import static java.lang.Math.pow;
@@ -84,6 +105,7 @@ public class DiseaseClassify extends AppCompatActivity {
         Button diseaseClassify = findViewById(R.id.classify_disease_button);
         Button capture = findViewById(R.id.capture_button_disease_classify);
         Button showRemedy = findViewById(R.id.showRemedy_btn);
+        Button cloudClassify = findViewById(R.id.cloud_classify_btn);
 
         imageView = findViewById(R.id.imageView3);
         TextView result1  = findViewById(R.id.classify_disease_textView);
@@ -138,12 +160,23 @@ public class DiseaseClassify extends AppCompatActivity {
                     TensorBuffer inputFeature0 = TensorBuffer.createFixedSize(new int[]{1, 224, 224, 3}, DataType.FLOAT32);
                     inputFeature0.loadArray(pixelBuffer, new int[]{1, 224, 224, 3});
 
+//                    //flask
+//                    predictDisease(bitmap);
+
+
                     // Run model inference and get result
                     ShortenedModel.Outputs outputs = model.process(inputFeature0);
                     TensorBuffer outputFeature0 = outputs.getOutputFeature0AsTensorBuffer();
 
                     //result1.setText(getMax(outputFeature0.getFloatArray()));
                     System.out.println("THE FINAL VALUE CLASS IS:  "+getMax(outputFeature0.getFloatArray())  );
+
+
+
+
+
+
+
 
                     // Releases model resources if no longer used.
                     model.close();
@@ -185,9 +218,66 @@ public class DiseaseClassify extends AppCompatActivity {
                 System.out.println("THE DB HAS"+str);
 
 
-                System.out.println(Remedy.getRemedyById(8));
+                System.out.println("the remedy is"+Remedy.getRemedyById(8));
             }
         });
+
+
+        cloudClassify.setOnClickListener(new View.OnClickListener() {
+
+            @Override
+            public void onClick(View view) {
+                // Instantiate the RequestQueue
+                RequestQueue queue = Volley.newRequestQueue(DiseaseClassify.this);
+
+// Define the endpoint URL
+                String url = "https://flask-api-383406.el.r.appspot.com/predict";
+
+// Convert bitmap to byte array
+                ByteArrayOutputStream baos = new ByteArrayOutputStream();
+                bitmap.compress(Bitmap.CompressFormat.JPEG, 100, baos);
+                byte[] imageData = baos.toByteArray();
+
+// Send a POST request with the image byte array
+                StringRequest stringRequest = new StringRequest(Request.Method.POST, url,
+                        new Response.Listener<String>() {
+                            @Override
+                            public void onResponse(String response) {
+                                // Handle response
+                                System.out.println("Response: " + response);
+                            }
+                        },
+                        new Response.ErrorListener() {
+                            @Override
+                            public void onErrorResponse(VolleyError error) {
+                                // Handle error
+                                System.out.println( "Error: " + error.getMessage());
+                            }
+                        }
+                ) {
+                    @Override
+                    public byte[] getBody() throws AuthFailureError {
+                        return imageData;
+                    }
+
+                    @Override
+                    public String getBodyContentType() {
+                        return "image/jpeg";
+                    }
+                };
+                queue.add(stringRequest);
+
+
+
+
+
+            }
+        });
+
+
+
+
+
 
 
 
@@ -346,8 +436,57 @@ public class DiseaseClassify extends AppCompatActivity {
     }
 
 
-
-
-
+//
+//    public void predictDisease(Bitmap image) {
+//        System.out.println("reached predict class");
+//        // Convert the bitmap image to a byte array
+//        ByteArrayOutputStream stream = new ByteArrayOutputStream();
+//        image.compress(Bitmap.CompressFormat.JPEG, 100, stream);
+//        byte[] byteArray = stream.toByteArray();
+//
+//        // Build the request body with the image byte array
+//        RequestBody requestBody = new MultipartBody.Builder()
+//                .setType(MultipartBody.FORM)
+//                .addFormDataPart("image", "image.jpg", RequestBody.create(MediaType.parse("image/jpeg"), byteArray))
+//                .build();
+//
+//        // Build the HTTP request with the request body
+//        Request request = new Request.Builder()
+//                .url("http://localhost:5000/predict")
+//                .post(requestBody)
+//                .build();
+//
+//        // Send the HTTP request and handle the response
+//        OkHttpClient client = new OkHttpClient();
+//        client.newCall(request).enqueue(new Callback() {
+//            @Override
+//            public void onFailure(Call call, IOException e) {
+//                // Handle the error
+//            }
+//
+//            @Override
+//            public void onResponse(Call call, Response response) throws IOException {
+//                if (!response.isSuccessful()) {
+//                    // Handle the error
+//                }
+//
+//                String responseBody = response.body().string();
+//
+//                try {
+//                    // Parse the JSON response
+//                    JSONObject jsonObject = new JSONObject(responseBody);
+//                    String className = jsonObject.getString("class");
+//                    double probability = jsonObject.getDouble("probability");
+//                    System.out.println("THE CLASS FROM FLASK IS "+ className);
+//                    // Update the UI with the prediction results
+//
+//                } catch (JSONException e) {
+//                    // Handle the error
+//                }
+//            }
+//        });
+//    }
+//
+//
 
 }

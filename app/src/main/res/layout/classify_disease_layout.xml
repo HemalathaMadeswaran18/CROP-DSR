@@ -47,5 +47,11 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:text="SHOW REMEDY" />
+
+        <Button
+            android:id="@+id/cloud_classify_btn"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="CLOUD CLASSIFY" />
     </LinearLayout>
 </androidx.constraintlayout.widget.ConstraintLayout>
