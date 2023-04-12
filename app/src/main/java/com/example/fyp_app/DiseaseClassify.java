@@ -4,6 +4,7 @@ import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.net.Uri;
+import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Bundle;
 import android.provider.MediaStore;
@@ -21,14 +22,7 @@ import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 
-import com.android.volley.AuthFailureError;
-import com.android.volley.NetworkResponse;
-import com.android.volley.Request;
-import com.android.volley.RequestQueue;
-import com.android.volley.Response;
-import com.android.volley.VolleyError;
-import com.android.volley.toolbox.StringRequest;
-import com.android.volley.toolbox.Volley;
+
 import com.example.fyp_app.ml.ShortenedModel;
 
 import org.json.JSONException;
@@ -44,6 +38,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
@@ -59,6 +54,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 import static java.lang.Math.floor;
 import static java.lang.Math.pow;
@@ -85,7 +81,12 @@ import org.opencv.core.Core;
 import org.opencv.core.Mat;
 import org.opencv.core.Scalar;
 
-
+import okhttp3.MediaType;
+import okhttp3.MultipartBody;
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import okhttp3.RequestBody;
+import okhttp3.Response;
 
 
 public class DiseaseClassify extends AppCompatActivity {
@@ -224,53 +225,61 @@ public class DiseaseClassify extends AppCompatActivity {
 
 
         cloudClassify.setOnClickListener(new View.OnClickListener() {
-
             @Override
             public void onClick(View view) {
-                // Instantiate the RequestQueue
-                RequestQueue queue = Volley.newRequestQueue(DiseaseClassify.this);
+                // Create a file in the app's internal storage directory
+                File file = new File(DiseaseClassify.this.getFilesDir(), "myImage.jpg");
 
-// Define the endpoint URL
+                // Save the bitmap to the file
+                FileOutputStream fos = null;
+                try {
+                    fos = new FileOutputStream(file);
+                } catch (FileNotFoundException e) {
+                    e.printStackTrace();
+                }
+                bitmap.compress(Bitmap.CompressFormat.JPEG, 100, fos);
+                try {
+                    fos.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+
+                OkHttpClient client = new OkHttpClient.Builder()
+                        .connectTimeout(60, TimeUnit.SECONDS)
+                        .writeTimeout(120, TimeUnit.SECONDS)
+                        .readTimeout(60, TimeUnit.SECONDS)
+                        .build();
+
+                RequestBody body = new MultipartBody.Builder()
+                        .setType(MultipartBody.FORM)
+                        .addFormDataPart("image",file.getName(),RequestBody.create(MediaType.parse("image/jpeg"),file))
+                        .build();
+
                 String url = "https://flask-api-383406.el.r.appspot.com/predict";
 
-// Convert bitmap to byte array
-                ByteArrayOutputStream baos = new ByteArrayOutputStream();
-                bitmap.compress(Bitmap.CompressFormat.JPEG, 100, baos);
-                byte[] imageData = baos.toByteArray();
+                Request request = new Request.Builder()
+                        .url(url)
+                        .post(body)
+                        .build();
 
-// Send a POST request with the image byte array
-                StringRequest stringRequest = new StringRequest(Request.Method.POST, url,
-                        new Response.Listener<String>() {
-                            @Override
-                            public void onResponse(String response) {
-                                // Handle response
-                                System.out.println("Response: " + response);
-                            }
-                        },
-                        new Response.ErrorListener() {
-                            @Override
-                            public void onErrorResponse(VolleyError error) {
-                                // Handle error
-                                System.out.println( "Error: " + error.getMessage());
-                            }
+                AsyncTask.execute(new Runnable() {
+                    @Override
+                    public void run() {
+                        try {
+                            Response response = client.newCall(request).execute();
+                            String responseBody = response.body().string();
+                            JSONObject json = new JSONObject(responseBody);
+                            String predictedClass = json.getString("class");
+                            double probability = json.getDouble("probability");
+                            // Handle the response here
+                            System.out.println("Predicted class: " + predictedClass);
+                            System.out.println("Probability: " + probability);
+
+                        }catch (IOException | JSONException e){
+                            e.printStackTrace();
                         }
-                ) {
-                    @Override
-                    public byte[] getBody() throws AuthFailureError {
-                        return imageData;
                     }
-
-                    @Override
-                    public String getBodyContentType() {
-                        return "image/jpeg";
-                    }
-                };
-                queue.add(stringRequest);
-
-
-
-
-
+                });
             }
         });
 
@@ -281,7 +290,60 @@ public class DiseaseClassify extends AppCompatActivity {
 
 
 
+
     }
+
+//    private void sendImageToFlaskAPI(Bitmap bitmap) {
+//        String url = "http://your-flask-api-url.com/predict";
+//
+//        // Convert bitmap to byte array
+//        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+//        bitmap.compress(Bitmap.CompressFormat.JPEG, 100, baos);
+//        byte[] imageBytes = baos.toByteArray();
+//
+//        // Create Volley request
+//        VolleyMultipartRequest multipartRequest = new VolleyMultipartRequest(Request.Method.POST, url,
+//                new Response.Listener<NetworkResponse>() {
+//                    @Override
+//                    public void onResponse(NetworkResponse response) {
+//                        // Handle response from Flask API
+//                    }
+//                },
+//                new Response.ErrorListener() {
+//                    @Override
+//                    public void onErrorResponse(VolleyError error) {
+//                        // Handle error
+//                    }
+//                }) {
+//
+//            @Override
+//            protected Map<String, DataPart> getByteData() {
+//                Map<String, DataPart> params = new HashMap<>();
+//                params.put("image", new DataPart("image.jpg", imageBytes));
+//                return params;
+//            }
+//        };
+//
+//        // Add the request to the Volley request queue
+//        RequestQueue requestQueue = Volley.newRequestQueue(this);
+//        requestQueue.add(multipartRequest);
+//    }
+
+
+    private byte[] getByteArrayFromFile(String filePath) {
+        ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
+        try (InputStream inputStream = new FileInputStream(filePath)) {
+            byte[] buffer = new byte[4096];
+            int bytesRead;
+            while ((bytesRead = inputStream.read(buffer)) != -1) {
+                byteArrayOutputStream.write(buffer, 0, bytesRead);
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return byteArrayOutputStream.toByteArray();
+    }
+
 
     int getMax(float arr[]){
         int max =0;
