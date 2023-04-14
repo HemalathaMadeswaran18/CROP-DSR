@@ -53,5 +53,23 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:text="CLOUD CLASSIFY" />
+
+        <Button
+            android:id="@+id/segment_btn"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="SEGMENT" />
+
+        <Button
+            android:id="@+id/severity_btn"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="SEVERITY" />
+
+        <Button
+            android:id="@+id/cloudSeverity"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="CLOUD SEVERITY" />
     </LinearLayout>
 </androidx.constraintlayout.widget.ConstraintLayout>

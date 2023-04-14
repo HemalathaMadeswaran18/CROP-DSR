@@ -3,6 +3,7 @@ package com.example.fyp_app;
 import androidx.appcompat.app.AppCompatActivity;
 
 import android.content.Intent;
+import android.net.Uri;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.Button;
@@ -56,6 +57,14 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onClick(View view) {
                 //TODO ADD PAGE FOR  CHATBOT
+                String url = "http://cropcure.epizy.com/";
+
+
+                Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(url));
+
+
+                startActivity(intent);
+
             }
         });
 

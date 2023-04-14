@@ -107,6 +107,9 @@ public class DiseaseClassify extends AppCompatActivity {
         Button capture = findViewById(R.id.capture_button_disease_classify);
         Button showRemedy = findViewById(R.id.showRemedy_btn);
         Button cloudClassify = findViewById(R.id.cloud_classify_btn);
+        Button segment = findViewById(R.id.segment_btn);
+        Button severity = findViewById(R.id.severity_btn);
+        Button cloudSeverity = findViewById(R.id.cloudSeverity);
 
         imageView = findViewById(R.id.imageView3);
         TextView result1  = findViewById(R.id.classify_disease_textView);
@@ -143,9 +146,9 @@ public class DiseaseClassify extends AppCompatActivity {
                     // Creates inputs for reference.
 
                     bitmap = Bitmap.createScaledBitmap(bitmap,224,224,true);
-                    bitmap = increaseContrast(bitmap);
-                    bitmap = weinerFilter(bitmap,5,0.9);
-                    bitmap = increaseSharpness(bitmap);
+                    //bitmap = increaseContrast(bitmap);
+                    //bitmap = weinerFilter(bitmap,5,0.9);
+                   // bitmap = increaseSharpness(bitmap);
 // Normalize pixel values to be between 0 and 1
                     float[] pixelBuffer = new float[224 * 224 * 3];
                     int[] pixels = new int[224 * 224];
@@ -274,6 +277,84 @@ public class DiseaseClassify extends AppCompatActivity {
                             // Handle the response here
                             System.out.println("Predicted class: " + predictedClass);
                             System.out.println("Probability: " + probability);
+
+                        }catch (IOException | JSONException e){
+                            e.printStackTrace();
+                        }
+                    }
+                });
+            }
+        });
+
+        segment.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+              Bitmap segementedBitmap =   processBitmap(bitmap);
+              imageView.setImageBitmap(segementedBitmap);
+
+            }
+        });
+
+
+        severity.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+
+            }
+        });
+
+        cloudSeverity.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                // Create a file in the app's internal storage directory
+                File file = new File(DiseaseClassify.this.getFilesDir(), "myImage.jpg");
+
+                // Save the bitmap to the file
+                FileOutputStream fos = null;
+                try {
+                    fos = new FileOutputStream(file);
+                } catch (FileNotFoundException e) {
+                    e.printStackTrace();
+                }
+                bitmap.compress(Bitmap.CompressFormat.JPEG, 100, fos);
+                try {
+                    fos.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+
+                OkHttpClient client = new OkHttpClient.Builder()
+                        .connectTimeout(60, TimeUnit.SECONDS)
+                        .writeTimeout(120, TimeUnit.SECONDS)
+                        .readTimeout(60, TimeUnit.SECONDS)
+                        .build();
+
+                RequestBody body = new MultipartBody.Builder()
+                        .setType(MultipartBody.FORM)
+                        .addFormDataPart("image",file.getName(),RequestBody.create(MediaType.parse("image/jpeg"),file))
+                        .build();
+
+                String url = "https://severity-flask.el.r.appspot.com/diseased_area";
+
+                Request request = new Request.Builder()
+                        .url(url)
+                        .post(body)
+                        .build();
+
+                AsyncTask.execute(new Runnable() {
+                    @Override
+                    public void run() {
+                        try {
+                            Response response = client.newCall(request).execute();
+                            String responseBody = response.body().string();
+                            JSONObject json = new JSONObject(responseBody);
+                            double diseasedAreaPercentage = json.getDouble("diseased_area_percentage");
+                            String infectionLevel = json.getString("infection_level");
+                            int severityScore = json.getInt("severity_score");
+                            // Handle the response here
+                            System.out.println("Diseased area percentage: " + diseasedAreaPercentage);
+                            System.out.println("Infection level: " + infectionLevel);
+                            System.out.println("Severity score: " + severityScore);
 
                         }catch (IOException | JSONException e){
                             e.printStackTrace();
@@ -551,4 +632,119 @@ public class DiseaseClassify extends AppCompatActivity {
 //
 //
 
+
+    public Bitmap processBitmap(Bitmap inputBitmap) {
+        // Convert the input bitmap to OpenCV Mat format
+        Mat img = new Mat();
+        Utils.bitmapToMat(inputBitmap, img);
+
+        // Convert the image from BGR color space to HSV color space
+        Mat hsv = new Mat();
+        Imgproc.cvtColor(img, hsv, Imgproc.COLOR_BGR2HSV);
+
+        // Create a binary mask for the color range of interest
+        Mat mask = new Mat();
+        Scalar lowerBound = new Scalar(8, 0, 0);
+        Scalar upperBound = new Scalar(86, 255, 255);
+        Core.inRange(hsv, lowerBound, upperBound, mask);
+
+        // Apply the mask to the original image
+        Mat res = new Mat();
+        Core.bitwise_and(img, img, res, mask);
+
+        // Convert the result back to Bitmap format
+        Bitmap outputBitmap = Bitmap.createBitmap(res.width(), res.height(), Bitmap.Config.ARGB_8888);
+        Utils.matToBitmap(res, outputBitmap);
+
+        return outputBitmap;
+    }
+
+
+
+    public static Bitmap detect(Bitmap inputBitmap) {
+        // Convert input bitmap to Mat
+        Mat inputMat = new Mat();
+
+
+        Utils.bitmapToMat(inputBitmap, inputMat);
+
+        // Convert the image to HSV color space
+        Mat hsvImg = new Mat();
+        Imgproc.cvtColor(inputMat, hsvImg, Imgproc.COLOR_BGR2HSV);
+
+        // Define the range of brown color in HSV color space
+        Scalar lowerBrown = new Scalar(0, 50, 50);
+        Scalar upperBrown = new Scalar(30, 255, 255);
+
+        // Create a mask that selects only brown pixels in the range
+        Mat mask = new Mat();
+        Core.inRange(hsvImg, lowerBrown, upperBrown, mask);
+
+        // Apply a median filter to reduce noise
+        Imgproc.medianBlur(mask, mask, 5);
+
+        // Invert the mask to get the diseased spots in white
+        Mat invMask = new Mat();
+        Core.bitwise_not(mask, invMask);
+
+        // Convert the image to grayscale
+        Mat grayImg = new Mat();
+        Imgproc.cvtColor(inputMat, grayImg, Imgproc.COLOR_BGR2GRAY);
+
+        // Apply the mask on the grayscale image
+        Mat maskedImg = new Mat();
+        Core.bitwise_and(grayImg, grayImg, maskedImg, invMask);
+
+        Mat maskedImg3Channels = new Mat();
+        Imgproc.cvtColor(maskedImg, maskedImg3Channels, Imgproc.COLOR_GRAY2BGR);
+
+        // Apply color mapping to the masked image to highlight the diseased spots in brown color
+        Mat colormask = new Mat();
+        Imgproc.applyColorMap(maskedImg3Channels, colormask, Imgproc.COLORMAP_AUTUMN);
+        Mat colormask3Channels = new Mat();
+        Imgproc.cvtColor(colormask, colormask3Channels, Imgproc.COLOR_GRAY2BGR);
+
+
+
+
+
+
+        // Combine the color mask with the original image
+        Mat outputMat = new Mat();
+        System.out.println("inputMat dimensions: " + inputMat.channels());
+        System.out.println("colormask dimensions: " + colormask.channels());
+        Core.addWeighted(inputMat, 0.7, colormask3Channels, 0.3, 0, outputMat);
+
+        // Convert output Mat to bitmap
+        Bitmap outputBitmap = Bitmap.createBitmap(outputMat.cols(), outputMat.rows(), Bitmap.Config.ARGB_8888);
+        Utils.matToBitmap(outputMat, outputBitmap);
+
+        // Calculate the percentage of the diseased area
+        int totalPixels = inputBitmap.getWidth() * inputBitmap.getHeight();
+        int diseasedPixels = Core.countNonZero(mask);
+        double diseasedAreaPercentage = (diseasedPixels / (double) totalPixels) * 100;
+
+        // Assign a severity score and corresponding infection level based on the percentage of leaf area affected
+        int severityScore;
+        String infectionLevel;
+        if (diseasedAreaPercentage <= 15) {
+            severityScore = 1;
+            infectionLevel = "Low infection";
+        } else if (diseasedAreaPercentage <= 50) {
+            severityScore = 2;
+            infectionLevel = "Moderate infection";
+        } else {
+            severityScore = 3;
+            infectionLevel = "High infection";
+        }
+
+        // Log the severity score and infection level
+        Log.d("TomatoDiseaseDetector", "Diseased Area: " + String.format("%.2f", diseasedAreaPercentage) + "%, Severity Score: " + severityScore + ", Infection Level: " + infectionLevel);
+
+        return outputBitmap;
+    }
+
 }
+
+
+
