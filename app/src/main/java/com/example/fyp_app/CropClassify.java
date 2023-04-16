@@ -12,6 +12,7 @@ import android.provider.MediaStore;
 import android.view.View;
 import android.widget.Button;
 import android.widget.ImageView;
+import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -38,7 +39,7 @@ public class CropClassify extends AppCompatActivity {
 
 
 
-    Bitmap bitmap;
+    Bitmap bitmap1;
     ImageView imageView;
 
     @Override
@@ -49,7 +50,8 @@ public class CropClassify extends AppCompatActivity {
         Button uploadimg = findViewById(R.id.upload_image_button_crop_classify);
         Button cropClassify = findViewById(R.id.crop_classify_button);
         Button capture = findViewById(R.id.capture_button_crop_classify);
-
+       imageView = findViewById(R.id.imageView2);
+        TextView display_crop_textView = findViewById(R.id.display_crop_textView);
         //to get camera permission
         getpermission() ;
         //upload the image
@@ -74,15 +76,15 @@ public class CropClassify extends AppCompatActivity {
                     CropclassifyModel model = CropclassifyModel.newInstance(CropClassify.this);
 
                     // Creates inputs for reference.
+                   //  bitmap1 = increaseContrastc(bitmap1);
+                  //   bitmap1 = weinerFilterc(bitmap1,5,0.9);
+                   //  bitmap1 = increaseSharpnessc(bitmap1);
+                    bitmap1 = Bitmap.createScaledBitmap(bitmap1,224,224,true);
 
-                    bitmap = Bitmap.createScaledBitmap(bitmap,224,224,true);
-                    bitmap = increaseContrastc(bitmap);
-                    bitmap = weinerFilterc(bitmap,5,0.9);
-                    bitmap = increaseSharpnessc(bitmap);
 
                     float[] pixelBuffer = new float[224 * 224 * 3];
                     int[] pixels = new int[224 * 224];
-                    bitmap.getPixels(pixels, 0, 224, 0, 0, 224, 224);
+                    bitmap1.getPixels(pixels, 0, 224, 0, 0, 224, 224);
                     for (int i = 0; i < pixels.length; i++) {
                         final int val = pixels[i];
                         pixelBuffer[i * 3 + 0] = ((val >> 16) & 0xFF) / 255.0f;
@@ -100,7 +102,27 @@ public class CropClassify extends AppCompatActivity {
 
                     //result1.setText(getMax(outputFeature0.getFloatArray()));
                     System.out.println("THE FINAL VALUE CLASS IS:  "+getMax(outputFeature0.getFloatArray())  );
-
+                    int num = getMax(outputFeature0.getFloatArray());
+                    if(num==0){
+                        System.out.println("APPLE");
+                        display_crop_textView.setText("APPLE");
+                    }
+                    else if(num ==1){
+                        System.out.println("BLACKGRAM");
+                        display_crop_textView.setText("BLACKGRAM");
+                    }
+                    else if(num ==2){
+                        System.out.println("GRAPE");
+                        display_crop_textView.setText("GRAPE");
+                    }
+                    else if(num==3){
+                        System.out.println("POTATO");
+                        display_crop_textView.setText("POTATO");
+                    }
+                    else if(num ==4){
+                        System.out.println("TOMATO");
+                        display_crop_textView.setText("TOMATO");
+                    }
                     // Releases model resources if no longer used.
                     model.close();
                 } catch (IOException e) {
@@ -155,8 +177,8 @@ public class CropClassify extends AppCompatActivity {
             if(data!=null){
                 Uri uri = data.getData();
                 try {
-                    bitmap = MediaStore.Images.Media.getBitmap(this.getContentResolver(),uri);
-                    imageView.setImageBitmap(bitmap);
+                    bitmap1 = MediaStore.Images.Media.getBitmap(this.getContentResolver(),uri);
+                     imageView.setImageBitmap(bitmap1);
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
@@ -165,8 +187,8 @@ public class CropClassify extends AppCompatActivity {
 
         else if(requestCode==12){
             //user is captureing image
-            bitmap = (Bitmap) data.getExtras().get("data");
-            imageView.setImageBitmap(bitmap);
+            bitmap1= (Bitmap) data.getExtras().get("data");
+            imageView.setImageBitmap(bitmap1);
         }
         super.onActivityResult(requestCode, resultCode, data);
     }

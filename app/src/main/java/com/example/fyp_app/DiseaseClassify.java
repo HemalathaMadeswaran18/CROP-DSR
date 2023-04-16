@@ -266,6 +266,8 @@ public class DiseaseClassify extends AppCompatActivity {
                 // Create a file in the app's internal storage directory
                 File file = new File(DiseaseClassify.this.getFilesDir(), "myImage.jpg");
 
+                result1.setText("Request sent,Please wait. This could take a minute");
+
                 // Save the bitmap to the file
                 FileOutputStream fos = null;
                 try {
@@ -307,7 +309,7 @@ public class DiseaseClassify extends AppCompatActivity {
                             JSONObject json = new JSONObject(responseBody);
                             String predictedClass = json.getString("class");
                             double probability = json.getDouble("probability");
-                            return "Predicted class: " + predictedClass + "Probability: " + probability;
+                            return "Predicted class: " + predictedClass + "\nProbability: " + probability;
                         } catch (IOException | JSONException e) {
                             e.printStackTrace();
                             return null;
@@ -348,7 +350,7 @@ public class DiseaseClassify extends AppCompatActivity {
             public void onClick(View view) {
                 // Create a file in the app's internal storage directory
                 File file = new File(DiseaseClassify.this.getFilesDir(), "myImage.jpg");
-
+                result1.setText("Request sent,Please wait. This could take a minute");
                 // Save the bitmap to the file
                 FileOutputStream fos = null;
                 try {
