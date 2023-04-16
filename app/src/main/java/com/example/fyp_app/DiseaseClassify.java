@@ -337,7 +337,8 @@ public class DiseaseClassify extends AppCompatActivity {
             public void onClick(View view) {
                 Bitmap segementedBitmap =   processBitmap(bitmap);
 
-                processImage(segementedBitmap);
+                String sever = processImage(segementedBitmap);
+                result1.setText(sever.toString());
 //segment code
               //  Bitmap segementedBitmap =   processBitmap(bitmap);
               //  imageView.setImageBitmap(segementedBitmap);
@@ -714,7 +715,7 @@ public class DiseaseClassify extends AppCompatActivity {
 
 
 
-    public void processImage(Bitmap bitmap) {
+    public String processImage(Bitmap bitmap) {
         // Convert the bitmap to a Mat object
         Mat img = new Mat();
         Utils.bitmapToMat(bitmap, img);
@@ -784,6 +785,8 @@ public class DiseaseClassify extends AppCompatActivity {
         // Display the results
         System.out.println("Diseased area percentage: " + diseased_area_percentage);
         System.out.println("Infection level: " + infection_level);
+        return "Infection level: " + infection_level;
+
     }
 
 
