@@ -103,7 +103,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:text="Low Infection:"
+                android:text="Remedy:"
                 android:textStyle="bold"
                 />
 
@@ -117,39 +117,8 @@
 
 
 
-        <TextView
-            android:id="@+id/textView15"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:text="Moderate Infection:"
-            android:textStyle="bold"
-            />
-
-        <TextView
-            android:id="@+id/moderateInfection_tv"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:text="" />
 
 
-            <TextView
-                android:id="@+id/textView17"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:text="High Infection:"
-                android:textStyle="bold"
-
-                />
-
-            <TextView
-                android:id="@+id/highInfection_tv"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:text="" />
 
     </LinearLayout>
     </ScrollView>

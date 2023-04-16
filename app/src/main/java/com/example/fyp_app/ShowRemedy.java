@@ -21,8 +21,7 @@ public class ShowRemedy extends AppCompatActivity {
         TextView cause = findViewById(R.id.cause_tv);
         TextView indicator = findViewById(R.id.indicator_tv);
         TextView lowInfection = findViewById(R.id.lowInfection);
-        TextView moderateInfection = findViewById(R.id.moderateInfection_tv);
-        TextView highInfection = findViewById(R.id.highInfection_tv);
+
         ImageView imageView = findViewById(R.id.imageView4);
 
         byte[] byteArray = getIntent().getByteArrayExtra("image");
@@ -36,8 +35,6 @@ public class ShowRemedy extends AppCompatActivity {
         cause.setText(getIntent().getExtras().getString("cause"));
         indicator.setText(getIntent().getExtras().getString("indicator"));
         lowInfection.setText(getIntent().getExtras().getString("lowInfection"));
-        moderateInfection.setText(getIntent().getExtras().getString("moderateInfection"));
-        highInfection.setText(getIntent().getExtras().getString("highInfection"));
 
 
 

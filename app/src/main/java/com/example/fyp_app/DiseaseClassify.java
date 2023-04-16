@@ -245,9 +245,7 @@ public class DiseaseClassify extends AppCompatActivity {
                     in1.putExtra("disease",Remedy.getRemedyById(localModelClassify).getDisease().toString());
                     in1.putExtra("cause",Remedy.getRemedyById(localModelClassify).getCause().toString());
                     in1.putExtra("indicator",Remedy.getRemedyById(localModelClassify).getIndicator().toString());
-                    in1.putExtra("lowInfection",Remedy.getRemedyById(localModelClassify).getLowInfection().toString());
-                    in1.putExtra("moderateInfection",Remedy.getRemedyById(localModelClassify).getModerateInfection().toString());
-                    in1.putExtra("highInfection",Remedy.getRemedyById(localModelClassify).getHighInfection().toString());
+                    in1.putExtra("lowInfection",Remedy.getRemedyById(localModelClassify).getRemedy().toString());
 
 
                     startActivity(in1);
@@ -397,7 +395,7 @@ public class DiseaseClassify extends AppCompatActivity {
                             System.out.println("Diseased area percentage: " + diseasedAreaPercentage);
                             System.out.println("Infection level: " + infectionLevel);
                             System.out.println("Severity score: " + severityScore);
-                            String result = "Diseased area percentage: " + diseasedAreaPercentage + "\nInfection level: " + infectionLevel + "\nSeverity score: " + severityScore;
+                            String result =  "Infection level: " + infectionLevel + "\nSeverity score: " + severityScore;
                             return result;
                         } catch (IOException | JSONException e) {
                             e.printStackTrace();
