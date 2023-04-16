@@ -53,6 +53,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
@@ -93,6 +94,7 @@ public class DiseaseClassify extends AppCompatActivity {
 
     Bitmap bitmap;
     ImageView imageView;
+    int localModelClassify;
 
 
 
@@ -107,7 +109,6 @@ public class DiseaseClassify extends AppCompatActivity {
         Button capture = findViewById(R.id.capture_button_disease_classify);
         Button showRemedy = findViewById(R.id.showRemedy_btn);
         Button cloudClassify = findViewById(R.id.cloud_classify_btn);
-        Button segment = findViewById(R.id.segment_btn);
         Button severity = findViewById(R.id.severity_btn);
         Button cloudSeverity = findViewById(R.id.cloudSeverity);
 
@@ -172,7 +173,14 @@ public class DiseaseClassify extends AppCompatActivity {
                     ShortenedModel.Outputs outputs = model.process(inputFeature0);
                     TensorBuffer outputFeature0 = outputs.getOutputFeature0AsTensorBuffer();
 
-                    //result1.setText(getMax(outputFeature0.getFloatArray()));
+                    localModelClassify = getMax(outputFeature0.getFloatArray());
+
+                    ClassNameMapper mapper = new ClassNameMapper();
+
+                    // get class name for index 3
+                    String className = mapper.getClassName(localModelClassify);
+                    result1.setText(className.toString());
+                    System.out.println(localModelClassify);
                     System.out.println("THE FINAL VALUE CLASS IS:  "+getMax(outputFeature0.getFloatArray())  );
 
 
@@ -213,16 +221,43 @@ public class DiseaseClassify extends AppCompatActivity {
 
 
 
-                List<Remedy> remedys = remedyDao.getAll();
-                String str = "";
+               // List<Remedy> remedys = remedyDao.getAll();
+               // String str = "";
 
-                    for(Remedy remedy: remedys)
-                        str = str+"\t "+remedy.getCropName()+" "+remedy.getRemedy_name()+"\n \n";
+                //    for(Remedy remedy: remedys)
+                //        str = str+"\t "+remedy.getCropName()+" "+remedy.getCropName()+"\n \n";
 
-                System.out.println("THE DB HAS"+str);
+              //  System.out.println("THE DB HAS"+str);
+
+                System.out.println(localModelClassify);
+                try {
+
+                    System.out.println("the remedy is"+Remedy.getRemedyById(localModelClassify));
+                    //result1.setText(Remedy.getRemedyById(localModelClassify).toString());
+                    //Convert to byte array
+                    ByteArrayOutputStream stream = new ByteArrayOutputStream();
+                    bitmap.compress(Bitmap.CompressFormat.PNG, 100, stream);
+                    byte[] byteArray = stream.toByteArray();
+
+                    Intent in1 = new Intent(DiseaseClassify.this, ShowRemedy.class);
+                    in1.putExtra("image",byteArray);
+                    in1.putExtra("cropName",Remedy.getRemedyById(localModelClassify).getCropName().toString());
+                    in1.putExtra("disease",Remedy.getRemedyById(localModelClassify).getDisease().toString());
+                    in1.putExtra("cause",Remedy.getRemedyById(localModelClassify).getCause().toString());
+                    in1.putExtra("indicator",Remedy.getRemedyById(localModelClassify).getIndicator().toString());
+                    in1.putExtra("lowInfection",Remedy.getRemedyById(localModelClassify).getLowInfection().toString());
+                    in1.putExtra("moderateInfection",Remedy.getRemedyById(localModelClassify).getModerateInfection().toString());
+                    in1.putExtra("highInfection",Remedy.getRemedyById(localModelClassify).getHighInfection().toString());
 
 
-                System.out.println("the remedy is"+Remedy.getRemedyById(8));
+                    startActivity(in1);
+                }
+                catch (NullPointerException n ){
+
+                    result1.setText("Classify the disease first!!");
+                }
+
+
             }
         });
 
@@ -265,40 +300,47 @@ public class DiseaseClassify extends AppCompatActivity {
                         .post(body)
                         .build();
 
-                AsyncTask.execute(new Runnable() {
+                new AsyncTask<Void, Void, String>() {
                     @Override
-                    public void run() {
+                    protected String doInBackground(Void... voids) {
                         try {
                             Response response = client.newCall(request).execute();
                             String responseBody = response.body().string();
                             JSONObject json = new JSONObject(responseBody);
                             String predictedClass = json.getString("class");
                             double probability = json.getDouble("probability");
-                            // Handle the response here
-                            System.out.println("Predicted class: " + predictedClass);
-                            System.out.println("Probability: " + probability);
-
-                        }catch (IOException | JSONException e){
+                            return "Predicted class: " + predictedClass + "Probability: " + probability;
+                        } catch (IOException | JSONException e) {
                             e.printStackTrace();
+                            return null;
                         }
                     }
-                });
+
+                    @Override
+                    protected void onPostExecute(String result) {
+                        if (result != null) {
+                            result1.setText(result);
+                        } else {
+                            result1.setText("Error occurred.");
+                        }
+                    }
+                }.execute();
+
             }
         });
 
-        segment.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-              Bitmap segementedBitmap =   processBitmap(bitmap);
-              imageView.setImageBitmap(segementedBitmap);
 
-            }
-        });
 
 
         severity.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
+                Bitmap segementedBitmap =   processBitmap(bitmap);
+
+                processImage(segementedBitmap);
+//segment code
+              //  Bitmap segementedBitmap =   processBitmap(bitmap);
+              //  imageView.setImageBitmap(segementedBitmap);
 
             }
         });
@@ -341,9 +383,9 @@ public class DiseaseClassify extends AppCompatActivity {
                         .post(body)
                         .build();
 
-                AsyncTask.execute(new Runnable() {
+                new AsyncTask<Void, Void, String>() {
                     @Override
-                    public void run() {
+                    protected String doInBackground(Void... params) {
                         try {
                             Response response = client.newCall(request).execute();
                             String responseBody = response.body().string();
@@ -355,12 +397,23 @@ public class DiseaseClassify extends AppCompatActivity {
                             System.out.println("Diseased area percentage: " + diseasedAreaPercentage);
                             System.out.println("Infection level: " + infectionLevel);
                             System.out.println("Severity score: " + severityScore);
-
-                        }catch (IOException | JSONException e){
+                            String result = "Diseased area percentage: " + diseasedAreaPercentage + "\nInfection level: " + infectionLevel + "\nSeverity score: " + severityScore;
+                            return result;
+                        } catch (IOException | JSONException e) {
                             e.printStackTrace();
                         }
+                        return null;
                     }
-                });
+
+                    @Override
+                    protected void onPostExecute(String result) {
+                        super.onPostExecute(result);
+                        if (result != null) {
+                            result1.setText(result);
+                        }
+                    }
+                }.execute();
+
             }
         });
 
@@ -661,88 +714,78 @@ public class DiseaseClassify extends AppCompatActivity {
 
 
 
-    public static Bitmap detect(Bitmap inputBitmap) {
-        // Convert input bitmap to Mat
-        Mat inputMat = new Mat();
-
-
-        Utils.bitmapToMat(inputBitmap, inputMat);
+    public void processImage(Bitmap bitmap) {
+        // Convert the bitmap to a Mat object
+        Mat img = new Mat();
+        Utils.bitmapToMat(bitmap, img);
 
         // Convert the image to HSV color space
-        Mat hsvImg = new Mat();
-        Imgproc.cvtColor(inputMat, hsvImg, Imgproc.COLOR_BGR2HSV);
+        Imgproc.cvtColor(img, img, Imgproc.COLOR_BGR2HSV);
 
         // Define the range of brown color in HSV color space
-        Scalar lowerBrown = new Scalar(0, 50, 50);
-        Scalar upperBrown = new Scalar(30, 255, 255);
+        Scalar lower_brown = new Scalar(0, 50, 50);
+        Scalar upper_brown = new Scalar(30, 255, 255);
 
         // Create a mask that selects only brown pixels in the range
         Mat mask = new Mat();
-        Core.inRange(hsvImg, lowerBrown, upperBrown, mask);
-
-        // Apply a median filter to reduce noise
-        Imgproc.medianBlur(mask, mask, 5);
+        Core.inRange(img, lower_brown, upper_brown, mask);
 
         // Invert the mask to get the diseased spots in white
-        Mat invMask = new Mat();
-        Core.bitwise_not(mask, invMask);
+        Mat inv_mask = new Mat();
+        Core.bitwise_not(mask, inv_mask);
 
         // Convert the image to grayscale
-        Mat grayImg = new Mat();
-        Imgproc.cvtColor(inputMat, grayImg, Imgproc.COLOR_BGR2GRAY);
+        Imgproc.cvtColor(img, img, Imgproc.COLOR_BGR2GRAY);
 
         // Apply the mask on the grayscale image
-        Mat maskedImg = new Mat();
-        Core.bitwise_and(grayImg, grayImg, maskedImg, invMask);
+        Mat masked_img = new Mat();
+        Core.bitwise_and(img, img, masked_img, inv_mask);
 
-        Mat maskedImg3Channels = new Mat();
-        Imgproc.cvtColor(maskedImg, maskedImg3Channels, Imgproc.COLOR_GRAY2BGR);
+        // If no brown disease spots are found, look for white disease spots
+        if (Core.countNonZero(mask) == 0) {
+            Scalar lower_white = new Scalar(0, 0, 150);
+            Scalar upper_white = new Scalar(255, 30, 255);
 
-        // Apply color mapping to the masked image to highlight the diseased spots in brown color
-        Mat colormask = new Mat();
-        Imgproc.applyColorMap(maskedImg3Channels, colormask, Imgproc.COLORMAP_AUTUMN);
-        Mat colormask3Channels = new Mat();
-        Imgproc.cvtColor(colormask, colormask3Channels, Imgproc.COLOR_GRAY2BGR);
+            // Create a mask that selects only white pixels in the range
+            mask = new Mat();
+            Core.inRange(img, lower_white, upper_white, mask);
 
+            // Apply a median filter to reduce noise
+            Imgproc.medianBlur(mask, mask, 5);
 
+            // Invert the mask to get the diseased spots in white
+            inv_mask = new Mat();
+            Core.bitwise_not(mask, inv_mask);
 
-
-
-
-        // Combine the color mask with the original image
-        Mat outputMat = new Mat();
-        System.out.println("inputMat dimensions: " + inputMat.channels());
-        System.out.println("colormask dimensions: " + colormask.channels());
-        Core.addWeighted(inputMat, 0.7, colormask3Channels, 0.3, 0, outputMat);
-
-        // Convert output Mat to bitmap
-        Bitmap outputBitmap = Bitmap.createBitmap(outputMat.cols(), outputMat.rows(), Bitmap.Config.ARGB_8888);
-        Utils.matToBitmap(outputMat, outputBitmap);
-
-        // Calculate the percentage of the diseased area
-        int totalPixels = inputBitmap.getWidth() * inputBitmap.getHeight();
-        int diseasedPixels = Core.countNonZero(mask);
-        double diseasedAreaPercentage = (diseasedPixels / (double) totalPixels) * 100;
-
-        // Assign a severity score and corresponding infection level based on the percentage of leaf area affected
-        int severityScore;
-        String infectionLevel;
-        if (diseasedAreaPercentage <= 15) {
-            severityScore = 1;
-            infectionLevel = "Low infection";
-        } else if (diseasedAreaPercentage <= 50) {
-            severityScore = 2;
-            infectionLevel = "Moderate infection";
-        } else {
-            severityScore = 3;
-            infectionLevel = "High infection";
+            // Apply the mask on the grayscale image
+            masked_img = new Mat();
+            Core.bitwise_and(img, img, masked_img, inv_mask);
         }
 
-        // Log the severity score and infection level
-        Log.d("TomatoDiseaseDetector", "Diseased Area: " + String.format("%.2f", diseasedAreaPercentage) + "%, Severity Score: " + severityScore + ", Infection Level: " + infectionLevel);
+        // Combine the mask with the original image
+        Mat output = new Mat();
+        Core.bitwise_and(img, img, output, mask);
 
-        return outputBitmap;
+        // Calculate the percentage of the diseased area
+        int total_pixels = bitmap.getWidth() * bitmap.getHeight();
+        int diseased_pixels = Core.countNonZero(mask);
+        double diseased_area_percentage = ((double)diseased_pixels / total_pixels) * 100;
+
+        // Assign infection level based on the percentage of leaf area affected
+        String infection_level;
+        if (diseased_area_percentage <= 15) {
+            infection_level = "Low infection";
+        } else if (diseased_area_percentage <= 50) {
+            infection_level = "Moderate infection";
+        } else {
+            infection_level = "High infection";
+        }
+
+        // Display the results
+        System.out.println("Diseased area percentage: " + diseased_area_percentage);
+        System.out.println("Infection level: " + infection_level);
     }
+
 
 }
 
