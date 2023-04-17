@@ -42,6 +42,8 @@ public class CropClassify extends AppCompatActivity {
     Bitmap bitmap1;
     ImageView imageView;
 
+
+
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -100,28 +102,32 @@ public class CropClassify extends AppCompatActivity {
                     CropclassifyModel.Outputs outputs = model.process(inputFeature0);
                     TensorBuffer outputFeature0 = outputs.getOutputFeature0AsTensorBuffer();
 
-                    //result1.setText(getMax(outputFeature0.getFloatArray()));
-                    System.out.println("THE FINAL VALUE CLASS IS:  "+getMax(outputFeature0.getFloatArray())  );
-                    int num = getMax(outputFeature0.getFloatArray());
-                    if(num==0){
-                        System.out.println("APPLE");
-                        display_crop_textView.setText("APPLE");
-                    }
-                    else if(num ==1){
-                        System.out.println("BLACKGRAM");
-                        display_crop_textView.setText("BLACKGRAM");
-                    }
-                    else if(num ==2){
-                        System.out.println("GRAPE");
-                        display_crop_textView.setText("GRAPE");
-                    }
-                    else if(num==3){
-                        System.out.println("POTATO");
-                        display_crop_textView.setText("POTATO");
-                    }
-                    else if(num ==4){
-                        System.out.println("TOMATO");
-                        display_crop_textView.setText("TOMATO");
+                    float checkimageValid = getMaxClassvalue(outputFeature0.getFloatArray());
+
+                    if(checkimageValid<0.9999){
+                        display_crop_textView.setText("ERROR: please upload valid image");
+                    }else {
+
+
+                        //result1.setText(getMax(outputFeature0.getFloatArray()));
+                        System.out.println("THE FINAL VALUE CLASS IS:  " + getMax(outputFeature0.getFloatArray()));
+                        int num = getMax(outputFeature0.getFloatArray());
+                        if (num == 0) {
+                            System.out.println("APPLE");
+                            display_crop_textView.setText("APPLE");
+                        } else if (num == 1) {
+                            System.out.println("BLACKGRAM");
+                            display_crop_textView.setText("BLACKGRAM");
+                        } else if (num == 2) {
+                            System.out.println("GRAPE");
+                            display_crop_textView.setText("GRAPE");
+                        } else if (num == 3) {
+                            System.out.println("POTATO");
+                            display_crop_textView.setText("POTATO");
+                        } else if (num == 4) {
+                            System.out.println("TOMATO");
+                            display_crop_textView.setText("TOMATO");
+                        }
                     }
                     // Releases model resources if no longer used.
                     model.close();
@@ -155,6 +161,20 @@ public class CropClassify extends AppCompatActivity {
 
         }
         return max;
+    }
+
+    float getMaxClassvalue(float arr[]){
+        int max =0;
+        for(int i=0;i<arr.length;i++){
+            System.out.println("the vaL"+arr[i]);
+            if(arr[i]> arr[max])max =i;
+
+        }
+        System.out.println("arr max is "+ arr[max]);
+        if(arr[max]<0.99){
+            System.out.println("ERROR: enter valid image");
+        }
+        return  arr[max];
     }
 
     @Override

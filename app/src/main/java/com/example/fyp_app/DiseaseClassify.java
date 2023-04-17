@@ -94,7 +94,10 @@ public class DiseaseClassify extends AppCompatActivity {
 
     Bitmap bitmap;
     ImageView imageView;
-    int localModelClassify;
+    int localModelClassify =99;
+    public  double probability1;
+
+    public int valid=1;
 
 
 
@@ -175,14 +178,22 @@ public class DiseaseClassify extends AppCompatActivity {
 
                     localModelClassify = getMax(outputFeature0.getFloatArray());
 
-                    ClassNameMapper mapper = new ClassNameMapper();
+                    float findValidImage = getMaxClassvalue(outputFeature0.getFloatArray());
 
-                    // get class name for index 3
-                    String className = mapper.getClassName(localModelClassify);
-                    result1.setText(className.toString());
-                    System.out.println(localModelClassify);
-                    System.out.println("THE FINAL VALUE CLASS IS:  "+getMax(outputFeature0.getFloatArray())  );
+                    if(findValidImage <0.999){
+                        result1.setText("ERROR: PLEASE ENTER A VALID IMAGE");
+                        valid=0;
+                    }
+                    else {
 
+                        ClassNameMapper mapper = new ClassNameMapper();
+
+                        // get class name for index 3
+                        String className = mapper.getClassName(localModelClassify);
+                        result1.setText(className.toString());
+                        System.out.println(localModelClassify);
+                        System.out.println("THE FINAL VALUE CLASS IS:  " + getMax(outputFeature0.getFloatArray()));
+                    }
 
 
 
@@ -215,47 +226,50 @@ public class DiseaseClassify extends AppCompatActivity {
             @Override
             public void onClick(View view) {
 
-                AppDatabase db  = Room.databaseBuilder(getApplicationContext(),
+                AppDatabase db = Room.databaseBuilder(getApplicationContext(),
                         AppDatabase.class, "roomdbnew").allowMainThreadQueries().build();
                 RemedyDAO remedyDao = db.remedyDao();
 
 
-
-               // List<Remedy> remedys = remedyDao.getAll();
-               // String str = "";
+                // List<Remedy> remedys = remedyDao.getAll();
+                // String str = "";
 
                 //    for(Remedy remedy: remedys)
                 //        str = str+"\t "+remedy.getCropName()+" "+remedy.getCropName()+"\n \n";
 
-              //  System.out.println("THE DB HAS"+str);
+                //  System.out.println("THE DB HAS"+str);
 
                 System.out.println(localModelClassify);
-                try {
 
-                    System.out.println("the remedy is"+Remedy.getRemedyById(localModelClassify));
-                    //result1.setText(Remedy.getRemedyById(localModelClassify).toString());
-                    //Convert to byte array
-                    ByteArrayOutputStream stream = new ByteArrayOutputStream();
-                    bitmap.compress(Bitmap.CompressFormat.PNG, 100, stream);
-                    byte[] byteArray = stream.toByteArray();
+                if (localModelClassify == 99) {
+                    result1.setText("Classify the image first");
+                } else {
+                    try {
 
-                    Intent in1 = new Intent(DiseaseClassify.this, ShowRemedy.class);
-                    in1.putExtra("image",byteArray);
-                    in1.putExtra("cropName",Remedy.getRemedyById(localModelClassify).getCropName().toString());
-                    in1.putExtra("disease",Remedy.getRemedyById(localModelClassify).getDisease().toString());
-                    in1.putExtra("cause",Remedy.getRemedyById(localModelClassify).getCause().toString());
-                    in1.putExtra("indicator",Remedy.getRemedyById(localModelClassify).getIndicator().toString());
-                    in1.putExtra("lowInfection",Remedy.getRemedyById(localModelClassify).getRemedy().toString());
+                        System.out.println("the remedy is" + Remedy.getRemedyById(localModelClassify));
+                        //result1.setText(Remedy.getRemedyById(localModelClassify).toString());
+                        //Convert to byte array
+                        ByteArrayOutputStream stream = new ByteArrayOutputStream();
+                        bitmap.compress(Bitmap.CompressFormat.PNG, 100, stream);
+                        byte[] byteArray = stream.toByteArray();
+
+                        Intent in1 = new Intent(DiseaseClassify.this, ShowRemedy.class);
+                        in1.putExtra("image", byteArray);
+                        in1.putExtra("cropName", Remedy.getRemedyById(localModelClassify).getCropName().toString());
+                        in1.putExtra("disease", Remedy.getRemedyById(localModelClassify).getDisease().toString());
+                        in1.putExtra("cause", Remedy.getRemedyById(localModelClassify).getCause().toString());
+                        in1.putExtra("indicator", Remedy.getRemedyById(localModelClassify).getIndicator().toString());
+                        in1.putExtra("lowInfection", Remedy.getRemedyById(localModelClassify).getRemedy().toString());
 
 
-                    startActivity(in1);
+                        startActivity(in1);
+                    } catch (NullPointerException n) {
+
+                        result1.setText("Classify the disease first!!");
+                    }
+
+
                 }
-                catch (NullPointerException n ){
-
-                    result1.setText("Classify the disease first!!");
-                }
-
-
             }
         });
 
@@ -309,6 +323,7 @@ public class DiseaseClassify extends AppCompatActivity {
                             JSONObject json = new JSONObject(responseBody);
                             String predictedClass = json.getString("class");
                             double probability = json.getDouble("probability");
+                            probability1 = probability;
                             return "Predicted class: " + predictedClass + "\nProbability: " + probability;
                         } catch (IOException | JSONException e) {
                             e.printStackTrace();
@@ -319,7 +334,11 @@ public class DiseaseClassify extends AppCompatActivity {
                     @Override
                     protected void onPostExecute(String result) {
                         if (result != null) {
-                            result1.setText(result);
+                            if(probability1<0.999){
+                                result1.setText("error: invalid image or image unclear please try again");
+                            }else {
+                                result1.setText(result);
+                            }
                         } else {
                             result1.setText("Error occurred.");
                         }
@@ -335,14 +354,23 @@ public class DiseaseClassify extends AppCompatActivity {
         severity.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                Bitmap segementedBitmap =   processBitmap(bitmap);
 
-                String sever = processImage(segementedBitmap);
-                result1.setText(sever.toString());
+                if (localModelClassify == 99) {
+                    result1.setText("Classify the image first");
+                } else {
+
+                    if (valid == 0) {
+                        result1.setText("ERROR: please upload valid image and classify");
+                    } else {
+                        Bitmap segementedBitmap = processBitmap(bitmap);
+
+                        String sever = processImage(segementedBitmap);
+                        result1.setText(sever.toString());
 //segment code
-              //  Bitmap segementedBitmap =   processBitmap(bitmap);
-              //  imageView.setImageBitmap(segementedBitmap);
-
+                        //  Bitmap segementedBitmap =   processBitmap(bitmap);
+                        //  imageView.setImageBitmap(segementedBitmap);
+                    }
+                }
             }
         });
 
@@ -409,8 +437,16 @@ public class DiseaseClassify extends AppCompatActivity {
                     @Override
                     protected void onPostExecute(String result) {
                         super.onPostExecute(result);
-                        if (result != null) {
-                            result1.setText(result);
+                        if (localModelClassify == 99) {
+                            result1.setText("Classify the image first");
+                        } else {
+                            if (result != null) {
+                                if (valid == 0) {
+                                    result1.setText("ERROR: please upload valid image and classify");
+                                } else {
+                                    result1.setText(result);
+                                }
+                            }
                         }
                     }
                 }.execute();
@@ -483,10 +519,29 @@ public class DiseaseClassify extends AppCompatActivity {
     int getMax(float arr[]){
         int max =0;
         for(int i=0;i<arr.length;i++){
+            System.out.println("the vaL"+arr[i]);
             if(arr[i]> arr[max])max =i;
 
         }
+        System.out.println("arr max is "+ arr[max]);
+        if(arr[max]<0.99){
+            System.out.println("ERROR: enter valid image");
+        }
         return max;
+    }
+
+    float getMaxClassvalue(float arr[]){
+        int max =0;
+        for(int i=0;i<arr.length;i++){
+            System.out.println("the vaL"+arr[i]);
+            if(arr[i]> arr[max])max =i;
+
+        }
+        System.out.println("arr max is "+ arr[max]);
+        if(arr[max]<0.99){
+            System.out.println("ERROR: enter valid image");
+        }
+        return  arr[max];
     }
 
 

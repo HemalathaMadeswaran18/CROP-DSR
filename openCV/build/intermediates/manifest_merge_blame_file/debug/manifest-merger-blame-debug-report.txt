@@ -4,8 +4,8 @@
 4
 5    <uses-sdk
 6        android:minSdkVersion="21"
-6-->/Users/hemalatha/AndroidStudioProjects/FYP_APP/openCV/java/AndroidManifest.xml
+6-->/Users/yuvi/StudioProjects/CROP-DSR/openCV/java/AndroidManifest.xml
 7        android:targetSdkVersion="33" />
-7-->/Users/hemalatha/AndroidStudioProjects/FYP_APP/openCV/java/AndroidManifest.xml
+7-->/Users/yuvi/StudioProjects/CROP-DSR/openCV/java/AndroidManifest.xml
 8
 9</manifest>
