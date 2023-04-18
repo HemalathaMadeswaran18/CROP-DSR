@@ -183,6 +183,7 @@ public class DiseaseClassify extends AppCompatActivity {
                     if(findValidImage <0.999){
                         result1.setText("ERROR: PLEASE ENTER A VALID IMAGE");
                         valid=0;
+                        localModelClassify=99;
                     }
                     else {
 
@@ -192,6 +193,7 @@ public class DiseaseClassify extends AppCompatActivity {
                         String className = mapper.getClassName(localModelClassify);
                         result1.setText(className.toString());
                         System.out.println(localModelClassify);
+                        valid=1;
                         System.out.println("THE FINAL VALUE CLASS IS:  " + getMax(outputFeature0.getFloatArray()));
                     }
 
@@ -338,6 +340,7 @@ public class DiseaseClassify extends AppCompatActivity {
                                 result1.setText("error: invalid image or image unclear please try again");
                             }else {
                                 result1.setText(result);
+                                valid =1; //ISvalid
                             }
                         } else {
                             result1.setText("Error occurred.");
