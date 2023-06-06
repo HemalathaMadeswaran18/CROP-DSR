@@ -19,6 +19,12 @@
 
 • A doubt-clarification chatbot is created which interacts with the user and provides them with a remedy for the crop’s diseases.
 
+## Architecture Diagram
+
+![Screen Shot 2023-06-06 at 6 00 30 PM](https://github.com/HemalathaMadeswaran18/CROP-DSR/assets/68108417/0e897f90-c090-4341-aed2-a1e316ae5513)
+
+
+
 ## Languages Used:
 
 Python, Java
